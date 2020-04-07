@@ -60,4 +60,5 @@ open class ImageStack {
     open var isSelected: Bool = true
     open var cameraPicture: Bool = false
     open var thumbnailImage: UIImage?
+    open var imageForServer: UIImage?
 }

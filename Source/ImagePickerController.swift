@@ -4,8 +4,8 @@ import Photos
 
 @objc public protocol ImagePickerDelegate: class {
 
-  func wrapperDidPress(_ imagePicker: ImagePickerController, images: [IPAsset])
-  func doneButtonDidPress(_ imagePicker: ImagePickerController, images: [IPAsset])
+  func wrapperDidPress(_ imagePicker: ImagePickerController, assets: [IPAsset])
+  func doneButtonDidPress(_ imagePicker: ImagePickerController, assets: [IPAsset])
   func cancelButtonDidPress(_ imagePicker: ImagePickerController)
 }
 
@@ -359,17 +359,17 @@ extension ImagePickerController: BottomContainerViewDelegate {
   func doneButtonDidPress() {
     cameraController.downloadingProgressView.isHidden = false
     if let preferredImageSize = preferredImageSize {
-      AssetManager.resolveAssets(stack.assets, size: preferredImageSize, completion: { (images) in
+      AssetManager.resolveAssets(stack.assets, size: preferredImageSize, completion: { (assets) in
         DispatchQueue.main.async {
           self.cameraController.downloadingProgressView.isHidden = true
-          self.delegate?.doneButtonDidPress(self, images: images)
+          self.delegate?.doneButtonDidPress(self, assets: assets)
         }
       })
     } else {
-      AssetManager.resolveAssets(stack.assets, completion: { (images) in
+      AssetManager.resolveAssets(stack.assets, completion: { (assets) in
         DispatchQueue.main.async {
           self.cameraController.downloadingProgressView.isHidden = true
-          self.delegate?.doneButtonDidPress(self, images: images)
+          self.delegate?.doneButtonDidPress(self, assets: assets)
         }
       })
     }
@@ -381,14 +381,14 @@ extension ImagePickerController: BottomContainerViewDelegate {
   }
 
   func imageStackViewDidPress() {
-    var images: [IPAsset]
+    var assets: [IPAsset]
     if let preferredImageSize = preferredImageSize {
-        images = AssetManager.resolveAssets(stack.assets, size: preferredImageSize)
+        assets = AssetManager.resolveAssets(stack.assets, size: preferredImageSize)
     } else {
-        images = AssetManager.resolveAssets(stack.assets)
+        assets = AssetManager.resolveAssets(stack.assets)
     }
 
-    delegate?.wrapperDidPress(self, images: images)
+    delegate?.wrapperDidPress(self, assets: assets)
   }
 }
 
