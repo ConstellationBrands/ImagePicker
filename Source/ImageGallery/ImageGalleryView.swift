@@ -128,7 +128,7 @@ open class ImageGalleryView: UIView {
 
     imagesBeforeLoading = 0
     fetchPhotos(withAssets: assets) {
-        if let selectedAsset = self.selectedStack.assets.filter({ $0.cameraPicture && $0.isSelected }).first {
+        if let selectedAsset = self.selectedStack.assets.filter({ $0.cameraPicture || $0.isSelected }).first {
             self.selectedStack.pushAsset(selectedAsset)
         }
     }
@@ -187,6 +187,11 @@ open class ImageGalleryView: UIView {
     func fetchPhotos(withAssets iPAssets:[IPAsset], _ completion: (() -> Void)? = nil) {
         AssetManager.fetch(withConfiguration: configuration) { assets in
             self.assets.removeAll()
+            iPAssets.filter({ $0.isSelected && $0.cameraPicture == false }).forEach({ iPAsset in
+                if let asset = assets.filter({ $0.phAsset ==  iPAsset.phAsset}).first {
+                    asset.isSelected = true
+                }
+            })
             if iPAssets.count > 0 {
                 self.assets.append(contentsOf: iPAssets.filter({ $0.cameraPicture == true }))
             }
