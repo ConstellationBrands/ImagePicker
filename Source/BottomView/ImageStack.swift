@@ -13,11 +13,8 @@ open class ImageStack {
   fileprivate let imageKey = "image"
 
   open func pushAsset(_ asset: IPAsset) {
-    if containsAsset(asset) {
-        if asset.cameraPicture {
-            asset.isSelected = true
-        }
-    } else {
+    asset.isSelected = true
+    if !containsAsset(asset) {
         assets.insert(asset, at: 0)
     }
     
@@ -50,14 +47,14 @@ open class ImageStack {
     }
     
     open func filterSelectedAssets() -> [IPAsset] {
-        return assets.filter({ $0.isSelected == true || $0.cameraPicture == false })
+        return assets.filter({ $0.isSelected == true })
     }
 }
 
 @objc open class IPAsset: NSObject {
     open var phAsset: PHAsset?
     open var image: UIImage?
-    open var isSelected: Bool = true
+    open var isSelected: Bool = false
     open var cameraPicture: Bool = false
     open var thumbnailImage: UIImage?
     open var imageForServer: UIImage?

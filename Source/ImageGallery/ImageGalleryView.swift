@@ -128,8 +128,8 @@ open class ImageGalleryView: UIView {
 
     imagesBeforeLoading = 0
     fetchPhotos(withAssets: assets) {
-        if let selectedAsset = self.selectedStack.assets.filter({ $0.cameraPicture || $0.isSelected }).first {
-            self.selectedStack.pushAsset(selectedAsset)
+        self.selectedStack.assets.filter({ $0.isSelected }).forEach {
+            self.selectedStack.pushAsset($0)
         }
     }
   }
