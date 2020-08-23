@@ -4,8 +4,8 @@ import Photos
 
 @objc public protocol ImagePickerDelegate: class {
 
-  func wrapperDidPress(_ imagePicker: ImagePickerController, images: [UIImage])
-  func doneButtonDidPress(_ imagePicker: ImagePickerController, images: [UIImage])
+  func wrapperDidPress(_ imagePicker: ImagePickerController, assets: [IPAsset])
+  func doneButtonDidPress(_ imagePicker: ImagePickerController, assets: [IPAsset])
   func cancelButtonDidPress(_ imagePicker: ImagePickerController)
 }
 
@@ -20,9 +20,8 @@ open class ImagePickerController: UIViewController {
   }
 
   open lazy var galleryView: ImageGalleryView = { [unowned self] in
-    let galleryView = ImageGalleryView(configuration: self.configuration)
+    let galleryView = ImageGalleryView(configuration: self.configuration, selectedStack: self.stack)
     galleryView.delegate = self
-    galleryView.selectedStack = self.stack
     galleryView.collectionView.layer.anchorPoint = CGPoint(x: 0, y: 0)
     galleryView.imageLimit = self.imageLimit
 
@@ -211,7 +210,7 @@ open class ImagePickerController: UIViewController {
   }
 
   func permissionGranted() {
-    galleryView.fetchPhotos()
+    galleryView.fetchPhotos(withAssets: stack.assets)
     enableGestures(true)
   }
 
@@ -270,7 +269,7 @@ open class ImagePickerController: UIViewController {
   @objc func adjustButtonTitle(_ notification: Notification) {
     guard let sender = notification.object as? ImageStack else { return }
 
-    let title = !sender.assets.isEmpty ?
+    let title = sender.countAssets() != 0 ?
       configuration.doneButtonTitle : configuration.cancelButtonTitle
     bottomContainer.doneButton.setTitle(title, for: UIControl.State())
   }
@@ -360,17 +359,17 @@ extension ImagePickerController: BottomContainerViewDelegate {
   func doneButtonDidPress() {
     cameraController.downloadingProgressView.isHidden = false
     if let preferredImageSize = preferredImageSize {
-      AssetManager.resolveAssets(stack.assets, size: preferredImageSize, completion: { (images) in
+      AssetManager.resolveAssets(stack.assets, size: preferredImageSize, completion: { (assets) in
         DispatchQueue.main.async {
           self.cameraController.downloadingProgressView.isHidden = true
-          self.delegate?.doneButtonDidPress(self, images: images)
+          self.delegate?.doneButtonDidPress(self, assets: assets)
         }
       })
     } else {
-      AssetManager.resolveAssets(stack.assets, completion: { (images) in
+      AssetManager.resolveAssets(stack.assets, completion: { (assets) in
         DispatchQueue.main.async {
           self.cameraController.downloadingProgressView.isHidden = true
-          self.delegate?.doneButtonDidPress(self, images: images)
+          self.delegate?.doneButtonDidPress(self, assets: assets)
         }
       })
     }
@@ -382,14 +381,14 @@ extension ImagePickerController: BottomContainerViewDelegate {
   }
 
   func imageStackViewDidPress() {
-    var images: [UIImage]
+    var assets: [IPAsset]
     if let preferredImageSize = preferredImageSize {
-        images = AssetManager.resolveAssets(stack.assets, size: preferredImageSize)
+        assets = AssetManager.resolveAssets(stack.assets, size: preferredImageSize)
     } else {
-        images = AssetManager.resolveAssets(stack.assets)
+        assets = AssetManager.resolveAssets(stack.assets)
     }
 
-    delegate?.wrapperDidPress(self, images: images)
+    delegate?.wrapperDidPress(self, assets: assets)
   }
 }
 
@@ -401,25 +400,27 @@ extension ImagePickerController: CameraViewDelegate {
     }
   }
 
-  func imageToLibrary() {
-    guard let collectionSize = galleryView.collectionSize else { return }
-
-    galleryView.fetchPhotos {
-      guard let asset = self.galleryView.assets.first else { return }
-      if self.configuration.allowMultiplePhotoSelection == false {
-        self.stack.assets.removeAll()
-      }
-      self.stack.pushAsset(asset)
-    }
-
-    galleryView.shouldTransform = true
-    bottomContainer.pickerButton.isEnabled = true
-
-    UIView.animate(withDuration: 0.3, animations: {
-      self.galleryView.collectionView.transform = CGAffineTransform(translationX: collectionSize.width, y: 0)
-      }, completion: { _ in
-        self.galleryView.collectionView.transform = CGAffineTransform.identity
-    })
+    func imageToLibrary(fromCamera: Bool, asset: IPAsset?) {
+        guard let collectionSize = galleryView.collectionSize else { return }
+        
+        if let asset = asset {
+            self.stack.pushAsset(asset)
+        }
+        
+        galleryView.fetchPhotos(withAssets: stack.assets) {
+            if self.configuration.allowMultiplePhotoSelection == false {
+                self.stack.assets.removeAll()
+            }
+        }
+        
+        galleryView.shouldTransform = true
+        bottomContainer.pickerButton.isEnabled = true
+        
+        UIView.animate(withDuration: 0.3, animations: {
+            self.galleryView.collectionView.transform = CGAffineTransform(translationX: collectionSize.width, y: 0)
+        }, completion: { _ in
+            self.galleryView.collectionView.transform = CGAffineTransform.identity
+        })
   }
 
   func cameraNotAvailable() {
